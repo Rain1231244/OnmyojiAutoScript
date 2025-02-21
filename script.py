@@ -43,6 +43,7 @@ _log_switch_lock = threading.Lock()#线程锁
 
 class Script:
     def __init__(self, config_name: str ='oas') -> None:
+        self.device = None
         logger.hr('Start', level=0)
         self.server = None
         self.state_queue: Queue = None
@@ -306,14 +307,45 @@ class Script:
             self.config.task = task
             if self.state_queue:
                 self.state_queue.put({"schedule": self.config.get_schedule_data()})
-            now = datetime.now()
-            # 任务时间到了返回任务名称
-            if task.next_run <= now:
-                return task.command
-            # 根据策略执行等待逻辑
-            if not self._handle_wait_during_idle(task.next_run):
-                # 若等待被打断, 则刷新配置
-                del_cached_property(self, "config")
+             # from module.base.resource import release_resources
+            # if self.config.task.command != 'Alas':
+            #     release_resources(next_task=task.command)
+
+            if task.next_run > datetime.now():
+                logger.info(f'Wait until {task.next_run} for task `{task.command}`')
+                method = self.config.script.optimization.when_task_queue_empty
+                if method == 'close_game':
+                    logger.info('Close game during wait')
+                    self.device.app_stop()
+                    self.device.release_during_wait()
+                    if not self.wait_until(task.next_run):
+                        del_cached_property(self, 'config')
+                        continue
+                    self.run('Restart')
+                elif method == 'goto_main':
+                    logger.info('Goto main page during wait')
+                    self.run('GotoMain')
+                    self.device.release_during_wait()
+                    if not self.wait_until(task.next_run):
+                        del_cached_property(self, 'config')
+                        continue
+                elif method == 'close_emulator':
+                    logger.info('close emulator during wait')
+                    if task.next_run > datetime.now() + timedelta(minutes=30):
+                        self.device.emulator_stop()
+                    self.device.release_during_wait()
+                    if not self.wait_until(task.next_run):
+                        del_cached_property(self, 'config')
+                        continue
+                else:
+                    logger.warning(f'Invalid Optimization_WhenTaskQueueEmpty: {method}, fallback to stay_there')
+                    self.device.release_during_wait()
+                    if not self.wait_until(task.next_run):
+                        del_cached_property(self, 'config')
+                        continue
+            break
+
+        return task.command
 
     def _handle_wait_during_idle(self, next_run: datetime) -> bool:
         """
@@ -475,6 +507,8 @@ class Script:
             #     logger.info('Server or network is recovered. Restart game client')
             #     self.config.task_call('Restart')
 
+            if self.is_first_task:
+                self.device = Device(self.config)
             # Get task
             task = self.get_next_task()
             _ = self.device
@@ -484,6 +518,7 @@ class Script:
                 self.config.task_delay(task='Restart', success=True, server=True)
                 del_cached_property(self, 'config')
                 continue
+            self.device = Device(self.config)
 
             # Run
             logger.info(f'Scheduler: Start task `{task}`')
