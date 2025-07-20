@@ -43,6 +43,7 @@ _log_switch_lock = threading.Lock()#线程锁
 
 class Script:
     def __init__(self, config_name: str ='oas') -> None:
+        self.device = None
         logger.hr('Start', level=0)
         self.server = None
         self.state_queue: Queue = None
@@ -361,6 +362,26 @@ class Script:
             self.config.task_call('SoulsTidy')
             time.sleep(1)
 
+    def _handle_goto_main(self):
+        logger.info('Goto main page during wait')
+        self.run('GotoMain')
+
+    def _handle_close_game(self, task, close_game_limit_time):
+        if task.next_run > datetime.now() + timedelta(hours=close_game_limit_time.hour, minutes=close_game_limit_time.minute, seconds=close_game_limit_time.second):
+            logger.info('Close game during wait')
+            self.device.app_stop()
+        else:
+            self._handle_goto_main()
+
+    def _handle_close_emulator_or(self, task, close_game_limit_time, close_emulator_limit_time, method):
+        if task.next_run > datetime.now() + timedelta(hours=close_emulator_limit_time.hour, minutes=close_emulator_limit_time.minute, seconds=close_emulator_limit_time.second):
+            logger.info('Close emulator during wait')
+            self.device.emulator_stop()
+        elif method == 'close_emulator_or_goto_main':
+            self._handle_goto_main()
+        else:
+            self._handle_close_game(task, close_game_limit_time)
+
     def run(self, command: str) -> bool:
         """
         :param command:  大写驼峰命名的任务名字
@@ -475,6 +496,8 @@ class Script:
             #     logger.info('Server or network is recovered. Restart game client')
             #     self.config.task_call('Restart')
 
+            if self.is_first_task:
+                self.device = Device(self.config)
             # Get task
             task = self.get_next_task()
             _ = self.device
@@ -484,6 +507,7 @@ class Script:
                 self.config.task_delay(task='Restart', success=True, server=True)
                 del_cached_property(self, 'config')
                 continue
+            self.device = Device(self.config)
 
             # Run
             logger.info(f'Scheduler: Start task `{task}`')
