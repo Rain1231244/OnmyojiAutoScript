@@ -38,6 +38,8 @@ from module.device.platform2.platform_windows import minimize_by_name,show_windo
 
 _log_switch_lock = threading.Lock()#线程锁
 
+_log_switch_lock = threading.Lock()#线程锁
+
 class Script:
     def __init__(self, config_name: str ='oas') -> None:
         self.device = None
