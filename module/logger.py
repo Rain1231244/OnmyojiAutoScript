@@ -129,7 +129,6 @@ class RichFileHandler(RichHandler):
 pyw_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
 
 
-
 def set_file_logger(name=pyw_name, *, do_cleanup=False):
     if '_' in name:
         name = name.split('_', 1)[0]
