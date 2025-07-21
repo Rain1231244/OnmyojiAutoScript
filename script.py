@@ -436,7 +436,6 @@ class Script:
         Main loop of scheduler.
         :return:
         """
-<<<<<<< HEAD
         with _log_switch_lock:
             logger.set_file_logger(self.config_name, do_cleanup=True)
         start_day = date.today()
@@ -458,12 +457,6 @@ class Script:
                 with _log_switch_lock:
                     logger.set_file_logger(self.config_name, do_cleanup=True)
                 start_day = date.today()
-=======
-        logger.set_file_logger(self.config_name)
-        logger.info(f'Start scheduler loop: {self.config_name}')
-
-        while 1:
->>>>>>> 5b006cc (Revert "Add auto check and delete log file")
             # Check update event from GUI
             # if self.stop_event is not None:
             #     if self.stop_event.is_set():
