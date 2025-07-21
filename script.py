@@ -423,8 +423,6 @@ class Script:
         Main loop of scheduler.
         :return:
         """
-
-
         with _log_switch_lock:
             logger.set_file_logger(self.config_name, do_cleanup=True)
         start_day = date.today()
