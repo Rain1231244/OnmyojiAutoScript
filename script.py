@@ -41,6 +41,9 @@ from module.server.i18n import I18n
 _log_switch_lock = threading.Lock()#线程锁
 
 
+from module.device.platform2.platform_windows import minimize_by_name,show_window_by_name
+
+
 class Script:
     def __init__(self, config_name: str ='oas') -> None:
         self.device = None
